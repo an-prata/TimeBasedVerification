@@ -18,9 +18,11 @@ namespace TimeBasedVerification
 	/// bitshifting it to the right x times, this way the small time difference in making
 	/// and decrypting the code can be accounted for.
 	/// </summary>
-	public class VerifierBase
+	public class VerifierBase : IDisposable
 	{
 		private const ulong byteMask = 0b_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_1111_1111;
+
+		private bool disposed = false;
 
 		/// <summary>
 		/// Whether or not this class is being used as a client,
@@ -282,6 +284,23 @@ namespace TimeBasedVerification
 			CryptoServiceProvider = new(keySize);
 			CryptoServiceProvider.ImportParameters(parameters);
 		}
+
+		public void Dispose() 
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		} 
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!disposed)
+			{
+				if (disposing) CryptoServiceProvider.Dispose();
+				disposed = true;
+			}
+		}
+
+		~VerifierBase() => Dispose(false);
 	}
 }
 
