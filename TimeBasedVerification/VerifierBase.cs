@@ -33,16 +33,17 @@ namespace TimeBasedVerification
 		public bool IsClient { get; private set; }
 
 		/// <summary>
-		/// The DateTime struct used to get ticks since 
-		/// Midnight, January 1, 2001 in Universal Time.
-		/// </summary>
-		public DateTime Time { get; }
-
-		/// <summary>
 		/// The CryptoServiceProvider used to create and verify
 		/// time based codes.
 		/// </summary>
 		public RSACryptoServiceProvider CryptoServiceProvider { get; private set; }
+
+		public static ulong GetCurrentElapsedTicks()
+		{
+			DateTime centuryBegin = new(2001, 1, 1);
+			DateTime currentDate = DateTime.Now;
+			return (ulong)(currentDate.Ticks - centuryBegin.Ticks);
+		}
 
 		/// <summary>
 		/// Creates a verification code based on the current time
@@ -55,7 +56,7 @@ namespace TimeBasedVerification
 		/// </returns>
 		public VerificationCode MakeVerificationCode()
 		{
-			ulong preimage = (ulong)Time.Ticks;
+			ulong preimage = GetCurrentElapsedTicks();
 			byte[] imageBytes = new byte[8];
 
 			// Takes 64-bit ulong preimage and makes it a byte array of length 8
@@ -96,7 +97,7 @@ namespace TimeBasedVerification
 		/// </returns>
 		public VerificationCode MakeVerificationCode(out byte[] code, bool encrypted = true)
 		{
-			ulong preimage = (ulong)Time.Ticks;
+			ulong preimage = GetCurrentElapsedTicks();
 			byte[] imageBytes = new byte[8];
 
 			// Takes 64-bit ulong preimage and makes it a byte array of length 8
@@ -119,9 +120,22 @@ namespace TimeBasedVerification
 			}; 
 		}
 
+		/// <summary>
+		/// Creates a verification code based on the current time
+		/// and then encrypts it.
+		/// </summary>
+		/// 
+		/// <param name="code">
+		/// The unencrypted code.
+		/// </param>
+		/// 
+		/// <returns>
+		/// The encrypted and time-based verification code that
+		/// was created.
+		/// </returns>
 		public VerificationCode MakeVerificationCode(out ulong code)
 		{
-			ulong preimage = (ulong)Time.Ticks;
+			ulong preimage = GetCurrentElapsedTicks();
 			code = preimage;
 			byte[] imageBytes = new byte[8];
 
@@ -131,7 +145,7 @@ namespace TimeBasedVerification
 			for (int i = 0; i < 8; i++)
 			{
 				int currentByte = 8 * i;							// Gets the distance between the desired byte and it's first binary digit in bits.
-				ulong currentByteMask = byteMask << currentByte;	// Creates a mask in which the desired byte is 1111_1111.
+				ulong currentByteMask = byteMask << currentByte;		// Creates a mask in which the desired byte is 1111_1111.
 				ulong image = preimage & currentByteMask;			// Applies the mask so that image is set to 0 everywhere except the desired byte.
 				imageBytes[i] = (byte)(image >> currentByte);		// Shifts image so that the desired byte is first and adds it to the array.
 			}
@@ -161,7 +175,7 @@ namespace TimeBasedVerification
 			if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
 
 			byte[] imageBytes;
-			ulong preimage = 0;
+			ulong preimage = 0b_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
 
 			try { imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); }
 			catch (CryptographicException) { throw; }
@@ -169,11 +183,11 @@ namespace TimeBasedVerification
 			for (int i = 0; i < 8; i++)
 			{
 				int currentByte = i * 8;								// Gets the distance between the desired byte and it's first binary digit in bits.
-				ulong image = (ulong)(imageBytes[i] << currentByte);	// Gets the value of the desired byte and shifts it to the desired location.
+				ulong image = ((ulong)imageBytes[i]) << currentByte;	// Gets the value of the desired byte and shifts it to the desired location.
 				preimage |= image;										// Adds the desired byte to preimage.
 			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
-			return preimage == (ulong)Time.Ticks;
+			return preimage == GetCurrentElapsedTicks();
 		}
 
 		/// <summary>
@@ -207,12 +221,12 @@ namespace TimeBasedVerification
 			for (int i = 0; i < 8; i++)
 			{
 				int currentByte = i * 8;								// Gets the distance between the desired byte and it's first binary digit in bits.
-				ulong image = (ulong)(imageBytes[i] << currentByte);	// Gets the value of the desired byte and shifts it to the desired location.
+				ulong image = ((ulong)imageBytes[i]) << currentByte;	// Gets the value of the desired byte and shifts it to the desired location.
 				preimage |= image;										// Adds the desired byte to preimage.
 			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
 			decryptedCode = imageBytes;
-			return preimage == (ulong)Time.Ticks;
+			return preimage == GetCurrentElapsedTicks();
 		}
 
 		/// <summary>
@@ -245,12 +259,12 @@ namespace TimeBasedVerification
 			for (int i = 0; i < 8; i++)
 			{
 				int currentByte = i * 8;								// Gets the distance between the desired byte and it's first binary digit in bits.
-				ulong image = (ulong)(imageBytes[i] << currentByte);	// Gets the value of the desired byte and shifts it to the desired location.
+				ulong image = ((ulong)imageBytes[i]) << currentByte;	// Gets the value of the desired byte and shifts it to the desired location.
 				preimage |= image;										// Adds the desired byte to preimage.
 			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
 			decryptedCode = preimage;
-			return preimage == (ulong)Time.Ticks;
+			return preimage == GetCurrentElapsedTicks();
 		}
 
 		/// <summary>
@@ -280,7 +294,6 @@ namespace TimeBasedVerification
 		public VerifierBase(RSAParameters parameters, int keySize, bool isClient)
 		{
 			IsClient = isClient;
-			Time = new(0, DateTimeKind.Utc);
 			CryptoServiceProvider = new(keySize);
 			CryptoServiceProvider.ImportParameters(parameters);
 		}
