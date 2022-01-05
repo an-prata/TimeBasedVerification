@@ -1,4 +1,4 @@
-﻿// TimeBasedVerification (https://github.com/an-prata/TimeBasedVerification)
+// TimeBasedVerification (https://github.com/an-prata/TimeBasedVerification)
 // Copyright (c) 2021 Evan Overman (https://github.com/an-prata)
 // Licensed under the MIT License.
 
@@ -8,16 +8,13 @@ namespace TimeBasedVerification
 {
 	/// <summary>
 	/// This class can be used to create and check verification codes based on the time,
-	/// because this class does not round or shift the time in any way the likelyhood of
-	/// a program getting the code before its invalid is near 0. Because of this you 
-	/// should either use one of the other classes to make and check codes, or use an
-	/// overload of MakeVerificationCode() and CheckVerificationCode() that will allow 
-	/// you to get either the preimage or image bytes variables and add your own 
-	/// tolerances to the difference between them, e.g. getting the preimage and 
-	/// bitshifting it to the right x times, this way the small time difference in making
-	/// and decrypting the code can be accounted for.
+	/// a delegate can be passed into the constructor that can be used to add tolerance.
+	/// This tolerance can be bitshifting to the right to make the times of the code's
+	/// creation and checking more similar, or some other way of making the times more
+	/// alike, this is so that when you check the code, not so much time has passed that
+	/// it is no longer valid.
 	/// </summary>
-	public class Verifier : IDisposable
+	public class TolerantVerifier : IDisposable
 	{
 		private const ulong byteMask = 0b_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_1111_1111;
 
@@ -36,6 +33,10 @@ namespace TimeBasedVerification
 		/// time based codes.
 		/// </summary>
 		public RSACryptoServiceProvider CryptoServiceProvider { get; private set; }
+
+		private ToleranceDelegate ApplyTolerance { get; set; }
+
+		public delegate ulong ToleranceDelegate(ulong image);
 
 		public static ulong GetCurrentElapsedTicks()
 		{
@@ -186,7 +187,7 @@ namespace TimeBasedVerification
 				preimage |= image;										// Adds the desired byte to preimage.
 			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
-			return preimage == GetCurrentElapsedTicks();
+			return ApplyTolerance(preimage) == ApplyTolerance(GetCurrentElapsedTicks());
 		}
 
 		/// <summary>
@@ -225,7 +226,7 @@ namespace TimeBasedVerification
 			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
 			decryptedCode = imageBytes;
-			return preimage == GetCurrentElapsedTicks();
+			return ApplyTolerance(preimage) == ApplyTolerance(GetCurrentElapsedTicks());
 		}
 
 		/// <summary>
@@ -263,11 +264,140 @@ namespace TimeBasedVerification
 			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
 			decryptedCode = preimage;
-			return preimage == GetCurrentElapsedTicks();
+			return ApplyTolerance(preimage) == ApplyTolerance(GetCurrentElapsedTicks());
 		}
 
 		/// <summary>
-		/// Creates a new instance of the Verifier class.
+		/// Checks if the encrypted code is valid by decrypting
+		/// it and comparing to the time using the tolerance
+		/// parameter.
+		/// </summary>
+		/// 
+		/// <param name="code">
+		/// The code to check.
+		/// </param>
+		/// 
+		/// <param name="tolerance">
+		/// The delegate to be used instead of the one passed
+		/// into the contructor.
+		/// </param>
+		/// 
+		/// <returns>
+		/// True if code is valid.
+		/// </returns>
+		public bool CheckVerificationCode(VerificationCode code, ToleranceDelegate tolerance)
+		{
+			if (!IsClient) throw new CryptographicException("No private key present for decryption.");
+			if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
+
+			byte[] imageBytes;
+			ulong preimage = 0b_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
+
+			try { imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); }
+			catch (CryptographicException) { throw; }
+
+			for (int i = 0; i < 8; i++)
+			{
+				int currentByte = i * 8;								// Gets the distance between the desired byte and it's first binary digit in bits.
+				ulong image = ((ulong)imageBytes[i]) << currentByte;	// Gets the value of the desired byte and shifts it to the desired location.
+				preimage |= image;										// Adds the desired byte to preimage.
+			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
+
+
+			return tolerance(preimage) == tolerance(GetCurrentElapsedTicks());
+		}
+
+		/// <summary>
+		/// Checks if the encrypted code is valid by decrypting
+		/// it and comparing to the time using the tolerance
+		/// parameter.
+		/// </summary>
+		/// 
+		/// <param name="code">
+		/// The code to check.
+		/// </param>
+		/// 
+		/// <param name="decryptedCode">
+		/// A byte array that will be assigned to the code
+		/// after it has been decrypted.
+		/// </param>
+		/// 
+		/// <param name="tolerance">
+		/// The delegate to be used instead of the one passed
+		/// into the contructor.
+		/// </param>
+		/// 
+		/// <returns>
+		/// True if code is valid.
+		/// </returns>
+		public bool CheckVerificationCode(VerificationCode code, out byte[] decryptedCode, ToleranceDelegate tolerance)
+		{
+			if (!IsClient) throw new CryptographicException("No private key present for decryption.");
+			if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
+
+			byte[] imageBytes;
+			ulong preimage = 0;
+
+			try { imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); }
+			catch (CryptographicException) { throw; }
+
+			for (int i = 0; i < 8; i++)
+			{
+				int currentByte = i * 8;								// Gets the distance between the desired byte and it's first binary digit in bits.
+				ulong image = ((ulong)imageBytes[i]) << currentByte;	// Gets the value of the desired byte and shifts it to the desired location.
+				preimage |= image;										// Adds the desired byte to preimage.
+			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
+
+			decryptedCode = imageBytes;
+			return tolerance(preimage) == tolerance(GetCurrentElapsedTicks());
+		}
+
+		/// <summary>
+		/// Checks if the encrypted code is valid by decrypting
+		/// it and comparing to the time using the tolerance
+		/// parameter.
+		/// </summary>
+		/// 
+		/// <param name="code">
+		/// The code to check.
+		/// </param>
+		/// 
+		/// <param name="decryptedCode">
+		/// A ulong that will be assigned the preimage.
+		/// </param>
+		/// 
+		/// <param name="tolerance">
+		/// The delegate to be used instead of the one passed
+		/// into the contructor.
+		/// </param>
+		/// 
+		/// <returns>
+		/// True if code is valid.
+		/// </returns>
+		public bool CheckVerificationCode(VerificationCode code, out ulong decryptedCode, ToleranceDelegate tolerance)
+		{
+			if (!IsClient) throw new CryptographicException("No private key present for decryption.");
+			if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
+
+			byte[] imageBytes;
+			ulong preimage = 0;
+
+			try { imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); }
+			catch (CryptographicException) { throw; }
+
+			for (int i = 0; i < 8; i++)
+			{
+				int currentByte = i * 8;								// Gets the distance between the desired byte and it's first binary digit in bits.
+				ulong image = ((ulong)imageBytes[i]) << currentByte;	// Gets the value of the desired byte and shifts it to the desired location.
+				preimage |= image;										// Adds the desired byte to preimage.
+			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
+
+			decryptedCode = preimage;
+			return tolerance(preimage) == tolerance(GetCurrentElapsedTicks());
+		}
+
+		/// <summary>
+		/// Creates a new instance of the TolerantVerifier class.
 		/// It's recommended that you use VerifierShifted or
 		/// VerifierRounded instead as they allow a small
 		/// tolerance in the amount of time between creating
@@ -277,7 +407,7 @@ namespace TimeBasedVerification
 		/// 
 		/// <param name="encryptionKey">
 		/// An RSAParameters object that contains the public
-		/// or private key used by the Verifier class. 
+		/// or private key used by the TolerantVerifier class. 
 		/// </param>
 		/// 
 		/// <param name="keySize">
@@ -290,11 +420,18 @@ namespace TimeBasedVerification
 		/// private data as only the client should have a 
 		/// private key.
 		/// </param>
-		public Verifier(RSAParameters parameters, int keySize, bool isClient)
+		/// 
+		/// <param name="tolerance">
+		/// The delegate to be used to apply an amount of
+		/// tolerance to the verification proccess, e.g.
+		/// bit shift to the right.
+		/// </param>
+		public TolerantVerifier(RSAParameters parameters, int keySize, bool isClient, ToleranceDelegate tolerance)
 		{
 			IsClient = isClient;
 			CryptoServiceProvider = new(keySize);
 			CryptoServiceProvider.ImportParameters(parameters);
+			ApplyTolerance = tolerance ?? throw new ArgumentException("tolerance was null: consider using Verifier.");
 		}
 
 		public void Dispose() 
@@ -312,7 +449,6 @@ namespace TimeBasedVerification
 			}
 		}
 
-		~Verifier() => Dispose(false);
+		~TolerantVerifier() => Dispose(false);
 	}
 }
-
