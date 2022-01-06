@@ -8,13 +8,13 @@ namespace TimeBasedVerification
 {
 	/// <summary>
 	/// This class can be used to create and check verification codes based on the time,
-	/// a delegate can be passed into the constructor that can be used to add tolerance.
-	/// This tolerance can be bitshifting to the right to make the times of the code's
-	/// creation and checking more similar, or some other way of making the times more
-	/// alike, this is so that when you check the code, not so much time has passed that
-	/// it is no longer valid.
+	/// it takes an optional unsigned integer as a parameter in the constructor that will 
+	/// used to shift the code that many times to the right. An option boolean parameter 
+	/// can be used to make it shift back and make that many bits 0. This unsigned integer 
+	/// can be overiden withoverides of CheckVerificationCode() to use the same class for 
+	/// multiple different right shift operations.
 	/// </summary>
-	public class TolerantVerifier : IDisposable
+	public class ShiftedTolerantVerifier : IDisposable
 	{
 		private const ulong byteMask = 0b_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_1111_1111;
 
@@ -34,7 +34,16 @@ namespace TimeBasedVerification
 		/// </summary>
 		public RSACryptoServiceProvider CryptoServiceProvider { get; private set; }
 
-		private ToleranceDelegate ApplyTolerance { get; set; }
+		private int _shift { get; set; }
+
+		private bool _shiftBack { get; set; }
+
+		private static ulong ApplyTolerance(ulong image, int shift, bool shiftBack)
+		{
+			ulong shiftedImage = image >> shift;
+			if (!shiftBack) return shiftedImage;
+			return shiftedImage << shift;
+		}
 
 		public delegate ulong ToleranceDelegate(ulong image);
 
@@ -187,7 +196,7 @@ namespace TimeBasedVerification
 				preimage |= image;										// Adds the desired byte to preimage.
 			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
-			return ApplyTolerance(preimage) == ApplyTolerance(GetCurrentElapsedTicks());
+			return ApplyTolerance(preimage, _shift, _shiftBack) == ApplyTolerance(GetCurrentElapsedTicks(), _shift, _shiftBack);
 		}
 
 		/// <summary>
@@ -226,7 +235,7 @@ namespace TimeBasedVerification
 			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
 			decryptedCode = imageBytes;
-			return ApplyTolerance(preimage) == ApplyTolerance(GetCurrentElapsedTicks());
+			return ApplyTolerance(preimage, _shift, _shiftBack) == ApplyTolerance(GetCurrentElapsedTicks(), _shift, _shiftBack);
 		}
 
 		/// <summary>
@@ -264,28 +273,33 @@ namespace TimeBasedVerification
 			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
 			decryptedCode = preimage;
-			return ApplyTolerance(preimage) == ApplyTolerance(GetCurrentElapsedTicks());
+			return ApplyTolerance(preimage, _shift, _shiftBack) == ApplyTolerance(GetCurrentElapsedTicks(), _shift, _shiftBack);
 		}
 
 		/// <summary>
 		/// Checks if the encrypted code is valid by decrypting
-		/// it and comparing to the time using the tolerance
-		/// parameter.
+		/// it and comparing to the time using the shift and
+		/// shiftback parameters provided.
 		/// </summary>
 		/// 
 		/// <param name="code">
 		/// The code to check.
 		/// </param>
 		/// 
-		/// <param name="tolerance">
-		/// The delegate to be used instead of the one passed
-		/// into the contructor.
+		/// <param name="shift">
+		/// The second operand in the right shift operation to
+		/// performed to add tolerance to the code check.
+		/// </param>
+		/// 
+		/// <param name="shiftBack">
+		/// Whether or not to shift the code back by int shift
+		/// and replace bits with 0.
 		/// </param>
 		/// 
 		/// <returns>
 		/// True if code is valid.
 		/// </returns>
-		public bool CheckVerificationCode(VerificationCode code, ToleranceDelegate tolerance)
+		public bool CheckVerificationCode(VerificationCode code, int shift, bool shiftBack = false)
 		{
 			if (!IsClient) throw new CryptographicException("No private key present for decryption.");
 			if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
@@ -304,13 +318,13 @@ namespace TimeBasedVerification
 			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
 
-			return tolerance(preimage) == tolerance(GetCurrentElapsedTicks());
+			return ApplyTolerance(preimage, shift, shiftBack) == ApplyTolerance(GetCurrentElapsedTicks(), shift, shiftBack);
 		}
 
 		/// <summary>
 		/// Checks if the encrypted code is valid by decrypting
-		/// it and comparing to the time using the tolerance
-		/// parameter.
+		/// it and comparing to the time using the shift and
+		/// shiftback parameters provided.
 		/// </summary>
 		/// 
 		/// <param name="code">
@@ -322,15 +336,20 @@ namespace TimeBasedVerification
 		/// after it has been decrypted.
 		/// </param>
 		/// 
-		/// <param name="tolerance">
-		/// The delegate to be used instead of the one passed
-		/// into the contructor.
+		/// <param name="shift">
+		/// The second operand in the right shift operation to
+		/// performed to add tolerance to the code check.
+		/// </param>
+		/// 
+		/// <param name="shiftBack">
+		/// Whether or not to shift the code back by int shift
+		/// and replace bits with 0.
 		/// </param>
 		/// 
 		/// <returns>
 		/// True if code is valid.
 		/// </returns>
-		public bool CheckVerificationCode(VerificationCode code, out byte[] decryptedCode, ToleranceDelegate tolerance)
+		public bool CheckVerificationCode(VerificationCode code, out byte[] decryptedCode, int shift, bool shiftBack = false)
 		{
 			if (!IsClient) throw new CryptographicException("No private key present for decryption.");
 			if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
@@ -349,13 +368,13 @@ namespace TimeBasedVerification
 			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
 			decryptedCode = imageBytes;
-			return tolerance(preimage) == tolerance(GetCurrentElapsedTicks());
+			return ApplyTolerance(preimage, shift, shiftBack) == ApplyTolerance(GetCurrentElapsedTicks(), shift, shiftBack);
 		}
 
 		/// <summary>
 		/// Checks if the encrypted code is valid by decrypting
-		/// it and comparing to the time using the tolerance
-		/// parameter.
+		/// it and comparing to the time using the shift and
+		/// shiftback parameters provided.
 		/// </summary>
 		/// 
 		/// <param name="code">
@@ -366,15 +385,20 @@ namespace TimeBasedVerification
 		/// A ulong that will be assigned the preimage.
 		/// </param>
 		/// 
-		/// <param name="tolerance">
-		/// The delegate to be used instead of the one passed
-		/// into the contructor.
+		/// <param name="shift">
+		/// The second operand in the right shift operation to
+		/// performed to add tolerance to the code check.
+		/// </param>
+		/// 
+		/// <param name="shiftBack">
+		/// Whether or not to shift the code back by int shift
+		/// and replace bits with 0.
 		/// </param>
 		/// 
 		/// <returns>
 		/// True if code is valid.
 		/// </returns>
-		public bool CheckVerificationCode(VerificationCode code, out ulong decryptedCode, ToleranceDelegate tolerance)
+		public bool CheckVerificationCode(VerificationCode code, out ulong decryptedCode, int shift, bool shiftBack = false)
 		{
 			if (!IsClient) throw new CryptographicException("No private key present for decryption.");
 			if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
@@ -393,7 +417,7 @@ namespace TimeBasedVerification
 			}															// NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
 			decryptedCode = preimage;
-			return tolerance(preimage) == tolerance(GetCurrentElapsedTicks());
+			return ApplyTolerance(preimage, shift, shiftBack) == ApplyTolerance(GetCurrentElapsedTicks(), shift, shiftBack);
 		}
 
 		/// <summary>
@@ -415,23 +439,29 @@ namespace TimeBasedVerification
 		/// parameters.
 		/// </param>
 		/// 
+		/// <param name="shift">
+		/// The second operand in the right shift operation to
+		/// performed to add tolerance to the code check.
+		/// </param>
+		/// 
 		/// <param name="isClient">
 		/// Should be true if the encryptionKey encludes
 		/// private data as only the client should have a 
 		/// private key.
 		/// </param>
 		/// 
-		/// <param name="tolerance">
-		/// The delegate to be used to apply an amount of
-		/// tolerance to the verification proccess, e.g.
-		/// bit shift to the right.
+		/// <param name="shiftBack">
+		/// Whether or not to shift the code back by int shift
+		/// and replace bits with 0.
 		/// </param>
-		public TolerantVerifier(RSAParameters parameters, int keySize, bool isClient, ToleranceDelegate tolerance)
+		public ShiftedTolerantVerifier(RSAParameters parameters, int keySize, int shift, bool isClient, bool shiftBack = false)
 		{
-			IsClient = isClient;
+			IsClient 	= isClient;
+			_shift 		= shift;
+			_shiftBack 	= shiftBack;
+
 			CryptoServiceProvider = new(keySize);
 			CryptoServiceProvider.ImportParameters(parameters);
-			ApplyTolerance = tolerance ?? throw new ArgumentException("tolerance was null: consider using Verifier.");
 		}
 
 		public void Dispose() 
@@ -449,6 +479,6 @@ namespace TimeBasedVerification
 			}
 		}
 
-		~TolerantVerifier() => Dispose(false);
+		~ShiftedTolerantVerifier() => Dispose(false);
 	}
 }
