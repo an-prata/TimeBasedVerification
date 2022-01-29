@@ -34,9 +34,9 @@ namespace TimeBasedVerification
 		/// </summary>
 		public RSACryptoServiceProvider CryptoServiceProvider { get; private set; }
 
-		private int _shift { get; set; }
+		private int _shift;
 
-		private bool _shiftBack { get; set; }
+		private bool _shiftBack;
 
 		private static ulong ApplyTolerance(ulong image, int shift, bool shiftBack)
 		{
@@ -44,8 +44,6 @@ namespace TimeBasedVerification
 			if (!shiftBack) return shiftedImage;
 			return shiftedImage << shift;
 		}
-
-		public delegate ulong ToleranceDelegate(ulong image);
 
 		public static ulong GetCurrentElapsedTicks()
 		{
