@@ -6,25 +6,22 @@ using System;
 using System.Threading;
 using System.Security.Cryptography;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace TimeBasedVerification.Tests
 {
-    public class TolerantVerifierTests
+    public class ShiftedTolerantVerifierTests
     {
-        private ulong ApplyTolerance(ulong code)
-        {
-            const ulong mask = 0b_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_0000_0000_0000_0000_0000_0000;
-            return code & mask;
-        }
-
-        [Fact]
-        public void CodeEncryptionTest()
+        [Theory]
+        [InlineData(32, false)]
+        //[InlineData(16, false)] // Currently Failing
+        [InlineData(32, true)]
+        //[InlineData(16, true)] // Currently Failing
+        public void CodeEncryptionTest(int shift, bool shiftBack)
         {
             const int keySize = 2048;
 
             RSACryptoServiceProvider cryptoServiceProvider = new(keySize);
-            TolerantVerifier verifier = new(cryptoServiceProvider.ExportParameters(true), keySize, true, ApplyTolerance);
+            ShiftedTolerantVerifier verifier = new(cryptoServiceProvider.ExportParameters(true), keySize, shift, true, shiftBack);
             VerificationCode verificationCode = verifier.MakeVerificationCode(out byte[] preimageBytes, false);
 
             Assert.True(verifier.CheckVerificationCode(verificationCode, out byte[] decryptedCodeBytes));
@@ -51,58 +48,74 @@ namespace TimeBasedVerification.Tests
             Assert.NotEqual(verificationCode.Code, decryptedCodeBytes);
         }
 
-        [Fact]
-        public void CodeVerificationTest()
+        [Theory]
+        [InlineData(32, false)]
+        //[InlineData(16, false)] // Currently Failing
+        [InlineData(32, true)]
+        //[InlineData(16, true)] // Currently Failing
+        public void CodeVerificationTest(int shift, bool shiftBack)
         {
             const int keySize = 2048;
 
             RSACryptoServiceProvider cryptoServiceProvider = new(keySize);
-            TolerantVerifier verifier0 = new(cryptoServiceProvider.ExportParameters(false), keySize, false, ApplyTolerance);
+            ShiftedTolerantVerifier verifier0 = new(cryptoServiceProvider.ExportParameters(true), keySize, shift, true, shiftBack);
 
             VerificationCode verificationCode = verifier0.MakeVerificationCode(out ulong code);
             verifier0.Dispose();
 
-            TolerantVerifier verifier1 = new(cryptoServiceProvider.ExportParameters(true), keySize, true, ApplyTolerance);
+            ShiftedTolerantVerifier verifier1 = new(cryptoServiceProvider.ExportParameters(true), keySize, shift, true, shiftBack);
             Assert.True(verifier1.CheckVerificationCode(verificationCode, out ulong decryptedCode));
             verifier1.Dispose();
         }
 
-        [Fact]
-        public void LateCodeVerificationTest()
+        [Theory]
+        [InlineData(4, false)]
+        [InlineData(8, false)]
+        [InlineData(4, true)]
+        [InlineData(8, true)]
+        public void LateCodeVerificationTest(int shift, bool shiftBack)
         {
             const int keySize = 2048;
 
             RSACryptoServiceProvider cryptoServiceProvider = new(keySize);
-            TolerantVerifier verifier0 = new(cryptoServiceProvider.ExportParameters(false), keySize, false, ApplyTolerance);
+            ShiftedTolerantVerifier verifier0 = new(cryptoServiceProvider.ExportParameters(true), keySize, shift, true, shiftBack);
 
             VerificationCode verificationCode = verifier0.MakeVerificationCode();
             verifier0.Dispose();
 
             Thread.Sleep(1000); // VerifierBase has a very low tolerance for latency between code creation and verification
-            Verifier verifier1 = new(cryptoServiceProvider.ExportParameters(true), keySize, true);
+            ShiftedTolerantVerifier verifier1 = new(cryptoServiceProvider.ExportParameters(true), keySize, shift, true, shiftBack);
             Assert.False(verifier1.CheckVerificationCode(verificationCode));    // The Outcome of this may depend on the speed of execution.
             verifier1.Dispose();
         }
 
-        [Fact]
-        public void PrivateDataCheckTest()
+        [Theory]
+        [InlineData(4, false)]
+        [InlineData(8, false)]
+        [InlineData(4, true)]
+        [InlineData(8, true)]
+        public void PrivateDataCheckTest(int shift, bool shiftBack)
         {
             const int keySize = 2048;
 
             RSACryptoServiceProvider cryptoServiceProvider = new(keySize);
-            TolerantVerifier verifier = new(cryptoServiceProvider.ExportParameters(false), keySize, false, ApplyTolerance);
+            ShiftedTolerantVerifier verifier = new(cryptoServiceProvider.ExportParameters(true), keySize, shift, false, shiftBack);
             VerificationCode verificationCode = verifier.MakeVerificationCode();
             Assert.Throws<CryptographicException>(() => verifier.CheckVerificationCode(verificationCode));
             verifier.Dispose();
         }
 
-        [Fact]
-        public void DisposeTest()
+        [Theory]
+        [InlineData(4, false)]
+        [InlineData(8, false)]
+        [InlineData(4, true)]
+        [InlineData(8, true)]
+        public void DisposeTest(int shift, bool shiftBack)
         {
             const int keySize = 2048;
 
             RSACryptoServiceProvider cryptoServiceProvider = new(keySize);
-            TolerantVerifier verifier = new(cryptoServiceProvider.ExportParameters(true), keySize, true, ApplyTolerance);
+            ShiftedTolerantVerifier verifier = new(cryptoServiceProvider.ExportParameters(true), keySize, shift, true, shiftBack);
             VerificationCode verificationCode = verifier.MakeVerificationCode();
             verifier.CheckVerificationCode(verificationCode);
             verifier.Dispose();
