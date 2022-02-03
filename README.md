@@ -1,3 +1,5 @@
+[![.NET](https://github.com/an-prata/TimeBasedVerification/actions/workflows/dotnet.yml/badge.svg)](https://github.com/an-prata/TimeBasedVerification/actions/workflows/dotnet.yml)
+
 # TimeBasedVerification
 A simple class library to create encrypted codes based on the time to verify data or actions in a program.
 
