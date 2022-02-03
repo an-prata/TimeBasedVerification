@@ -37,11 +37,11 @@ namespace TimeBasedVerification
         /// </summary>
         public RSACryptoServiceProvider CryptoServiceProvider { get; private set; }
 
-        public static ulong GetCurrentElapsedTicks()
+        public static ulong GetCurrentElapsedSeconds()
         {
             DateTime centuryBegin = new(2001, 1, 1);
             DateTime currentDate = DateTime.Now;
-            return (ulong)(currentDate.Ticks - centuryBegin.Ticks);
+            return (ulong)(currentDate.Second - centuryBegin.Second);
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace TimeBasedVerification
         /// </returns>
         public VerificationCode MakeVerificationCode()
         {
-            ulong preimage = GetCurrentElapsedTicks();
+            ulong preimage = GetCurrentElapsedSeconds();
             byte[] imageBytes = new byte[8];
 
             // Takes 64-bit ulong preimage and makes it a byte array of length 8
@@ -96,7 +96,7 @@ namespace TimeBasedVerification
         /// </returns>
         public VerificationCode MakeVerificationCode(out byte[] code, bool encrypted = true)
         {
-            ulong preimage = GetCurrentElapsedTicks();
+            ulong preimage = GetCurrentElapsedSeconds();
             byte[] imageBytes = new byte[8];
 
             // Takes 64-bit ulong preimage and makes it a byte array of length 8
@@ -134,7 +134,7 @@ namespace TimeBasedVerification
         /// </returns>
         public VerificationCode MakeVerificationCode(out ulong code)
         {
-            ulong preimage = GetCurrentElapsedTicks();
+            ulong preimage = GetCurrentElapsedSeconds();
             code = preimage;
             byte[] imageBytes = new byte[8];
 
@@ -186,7 +186,7 @@ namespace TimeBasedVerification
                 preimage |= image;                                      // Adds the desired byte to preimage.
             }                                                           // NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
-            return preimage == GetCurrentElapsedTicks();
+            return preimage == GetCurrentElapsedSeconds();
         }
 
         /// <summary>
@@ -225,7 +225,7 @@ namespace TimeBasedVerification
             }                                                           // NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
             decryptedCode = imageBytes;
-            return preimage == GetCurrentElapsedTicks();
+            return preimage == GetCurrentElapsedSeconds();
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace TimeBasedVerification
             }                                                           // NOTE: The mask can be omitted since none of the values are more than 8 bits.
 
             decryptedCode = preimage;
-            return preimage == GetCurrentElapsedTicks();
+            return preimage == GetCurrentElapsedSeconds();
         }
 
         /// <summary>
