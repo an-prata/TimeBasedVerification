@@ -48,7 +48,7 @@ namespace TimeBasedVerification.Tests
         {
             const int keySize = 2048;
 
-            const ulong mask = 0b_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_0000_0000_0000_0000;
+            const ulong mask = 0b_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_0000_0000;
 
             RSACryptoServiceProvider cryptoServiceProvider = new(keySize);
             Verifier verifier0 = new(cryptoServiceProvider.ExportParameters(false), keySize, false);
@@ -57,10 +57,16 @@ namespace TimeBasedVerification.Tests
             verifier0.Dispose();
 
             Verifier verifier1 = new(cryptoServiceProvider.ExportParameters(true), keySize, true);
-            Assert.False(verifier1.CheckVerificationCode(verificationCode, out ulong decryptedCode));   // Checks the values without tolerance to time, should be false.
+
+            // Since the class counts on seconds this will change the value it produces to check the code, making them unequal.
+            Thread.Sleep(2000); 
+
+            // Checks the values without tolerance to time, should be false.
+            Assert.False(verifier1.CheckVerificationCode(verificationCode, out ulong decryptedCode));   
             verifier1.Dispose();
 
-            Assert.Equal(code & mask, decryptedCode & mask);    // Applies a tolerance to time differences using the mask.
+            // Applies a tolerance to time differences using the mask.
+            Assert.Equal(code & mask, decryptedCode & mask);    
         }
 
         [Fact]
@@ -74,9 +80,13 @@ namespace TimeBasedVerification.Tests
             VerificationCode verificationCode = verifier0.MakeVerificationCode();
             verifier0.Dispose();
 
-            Thread.Sleep(1000); // VerifierBase has a very low tolerance for latency between code creation and verification
+            // VerifierBase has a very low tolerance for latency between code creation and verification
+            // because of this, without applying tolerances to the values and checking them manualy
+            // they will become invalid in just a second.
+            Thread.Sleep(1000); 
             Verifier verifier1 = new(cryptoServiceProvider.ExportParameters(true), keySize, true);
-            Assert.False(verifier1.CheckVerificationCode(verificationCode));    // The Outcome of this may depend on the speed of execution.
+            Assert.False(verifier1.CheckVerificationCode(verificationCode));
+            
             verifier1.Dispose();
         }
 

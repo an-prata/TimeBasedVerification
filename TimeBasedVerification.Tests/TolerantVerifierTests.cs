@@ -14,7 +14,7 @@ namespace TimeBasedVerification.Tests
     {
         private ulong ApplyTolerance(ulong code)
         {
-            const ulong mask = 0b_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_0000_0000_0000_0000_0000_0000;
+            const ulong mask = 0b_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_0000_0000;
             return code & mask;
         }
 
@@ -73,14 +73,16 @@ namespace TimeBasedVerification.Tests
             const int keySize = 2048;
 
             RSACryptoServiceProvider cryptoServiceProvider = new(keySize);
+
             TolerantVerifier verifier0 = new(cryptoServiceProvider.ExportParameters(false), keySize, false, ApplyTolerance);
-
             VerificationCode verificationCode = verifier0.MakeVerificationCode();
-            verifier0.Dispose();
 
-            Thread.Sleep(1000); // VerifierBase has a very low tolerance for latency between code creation and verification
-            Verifier verifier1 = new(cryptoServiceProvider.ExportParameters(true), keySize, true);
-            Assert.False(verifier1.CheckVerificationCode(verificationCode));    // The Outcome of this may depend on the speed of execution.
+            verifier0.Dispose();
+            Thread.Sleep(1000); 
+
+            TolerantVerifier verifier1 = new(cryptoServiceProvider.ExportParameters(true), keySize, true, ApplyTolerance);
+            Assert.True(verifier1.CheckVerificationCode(verificationCode));
+
             verifier1.Dispose();
         }
 
