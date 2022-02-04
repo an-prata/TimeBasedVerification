@@ -4,6 +4,9 @@
 
 using System.Security.Cryptography;
 
+using static TimeBasedVerification.BitwiseHelpers.ByteArrays;
+using static TimeBasedVerification.BitwiseHelpers.UnsignedNumericals;
+
 namespace TimeBasedVerification
 {
     /// <summary>
@@ -16,8 +19,6 @@ namespace TimeBasedVerification
     /// </summary>
     public class ShiftedTolerantVerifier : IDisposable
     {
-        private const ulong byteMask = 0b_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_1111_1111;
-
         private bool disposed = false;
 
         /// <summary>
@@ -64,18 +65,7 @@ namespace TimeBasedVerification
         public VerificationCode MakeVerificationCode()
         {
             ulong preimage = GetCurrentElapsedSeconds();
-            byte[] imageBytes = new byte[8];
-
-            // Takes 64-bit ulong preimage and makes it a byte array of length 8
-            // so that imageBytes[0] is the first 8 bits of preimage and imageBytes[2]
-            // is the second 8 bits etc.
-            for (int i = 0; i < 8; i++)
-            {
-                int currentByte = 8 * i;                            // Gets the distance between the desired byte and it's first binary digit in bits.
-                ulong currentByteMask = byteMask << currentByte;    // Creates a mask in which the desired byte is 1111_1111.
-                ulong image = preimage & currentByteMask;           // Applies the mask so that image is set to 0 everywhere except the desired byte.
-                imageBytes[i] = (byte)(image >> currentByte);       // Shifts image so that the desired byte is first and adds it to the array.
-            }
+            byte[] imageBytes = ToBytes(preimage);
 
             return new VerificationCode
             {
@@ -105,18 +95,7 @@ namespace TimeBasedVerification
         public VerificationCode MakeVerificationCode(out byte[] code, bool encrypted = true)
         {
             ulong preimage = GetCurrentElapsedSeconds();
-            byte[] imageBytes = new byte[8];
-
-            // Takes 64-bit ulong preimage and makes it a byte array of length 8
-            // so that imageBytes[0] is the first 8 bits of preimage and imageBytes[2]
-            // is the second 8 bits etc.
-            for (int i = 0; i < 8; i++)
-            {
-                int currentByte = 8 * i;                            // Gets the distance between the desired byte and it's first binary digit in bits.
-                ulong currentByteMask = byteMask << currentByte;    // Creates a mask in which the desired byte is 1111_1111.
-                ulong image = preimage & currentByteMask;           // Applies the mask so that image is set to 0 everywhere except the desired byte.
-                imageBytes[i] = (byte)(image >> currentByte);       // Shifts image so that the desired byte is first and adds it to the array.
-            }
+            byte[] imageBytes = ToBytes(preimage);
 
             code = encrypted ? CryptoServiceProvider.Encrypt(imageBytes, true) : imageBytes;
 
@@ -143,19 +122,9 @@ namespace TimeBasedVerification
         public VerificationCode MakeVerificationCode(out ulong code)
         {
             ulong preimage = GetCurrentElapsedSeconds();
-            code = preimage;
-            byte[] imageBytes = new byte[8];
+            byte[] imageBytes = ToBytes(preimage);
 
-            // Takes 64-bit ulong preimage and makes it a byte array of length 8
-            // so that imageBytes[0] is the first 8 bits of preimage and imageBytes[2]
-            // is the second 8 bits etc.
-            for (int i = 0; i < 8; i++)
-            {
-                int currentByte = 8 * i;                            // Gets the distance between the desired byte and it's first binary digit in bits.
-                ulong currentByteMask = byteMask << currentByte;    // Creates a mask in which the desired byte is 1111_1111.
-                ulong image = preimage & currentByteMask;           // Applies the mask so that image is set to 0 everywhere except the desired byte.
-                imageBytes[i] = (byte)(image >> currentByte);       // Shifts image so that the desired byte is first and adds it to the array.
-            }
+			code = preimage;
 
             return new VerificationCode
             {
@@ -181,20 +150,13 @@ namespace TimeBasedVerification
             if (!IsClient) throw new CryptographicException("No private key present for decryption.");
             if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
 
-            byte[] imageBytes;
-            ulong preimage = 0b_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
-
-            try { imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); }
+            try 
+			{ 
+				byte[] imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); 
+				ulong preimage = ToUlong(imageBytes);
+				return ApplyTolerance(preimage, _shift, _shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), _shift, _shiftBack);
+			}
             catch (CryptographicException) { throw; }
-
-            for (int i = 0; i < 8; i++)
-            {
-                int currentByte = i * 8;                                // Gets the distance between the desired byte and it's first binary digit in bits.
-                ulong image = ((ulong)imageBytes[i]) << currentByte;    // Gets the value of the desired byte and shifts it to the desired location.
-                preimage |= image;                                      // Adds the desired byte to preimage.
-            }                                                           // NOTE: The mask can be omitted since none of the values are more than 8 bits.
-
-            return ApplyTolerance(preimage, _shift, _shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), _shift, _shiftBack);
         }
 
         /// <summary>
@@ -219,21 +181,15 @@ namespace TimeBasedVerification
             if (!IsClient) throw new CryptographicException("No private key present for decryption.");
             if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
 
-            byte[] imageBytes;
-            ulong preimage = 0;
-
-            try { imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); }
+            try 
+			{ 
+				byte[] imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); 
+				ulong preimage = ToUlong(imageBytes);
+				
+				decryptedCode = imageBytes;
+				return ApplyTolerance(preimage, _shift, _shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), _shift, _shiftBack);
+			}
             catch (CryptographicException) { throw; }
-
-            for (int i = 0; i < 8; i++)
-            {
-                int currentByte = i * 8;                                // Gets the distance between the desired byte and it's first binary digit in bits.
-                ulong image = ((ulong)imageBytes[i]) << currentByte;    // Gets the value of the desired byte and shifts it to the desired location.
-                preimage |= image;                                      // Adds the desired byte to preimage.
-            }                                                           // NOTE: The mask can be omitted since none of the values are more than 8 bits.
-
-            decryptedCode = imageBytes;
-            return ApplyTolerance(preimage, _shift, _shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), _shift, _shiftBack);
         }
 
         /// <summary>
@@ -257,21 +213,15 @@ namespace TimeBasedVerification
             if (!IsClient) throw new CryptographicException("No private key present for decryption.");
             if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
 
-            byte[] imageBytes;
-            ulong preimage = 0;
+            try 
+			{ 
+				byte[] imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); 
+				ulong preimage = ToUlong(imageBytes);
 
-            try { imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); }
+				decryptedCode = preimage;
+            	return ApplyTolerance(preimage, _shift, _shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), _shift, _shiftBack);
+			}
             catch (CryptographicException) { throw; }
-
-            for (int i = 0; i < 8; i++)
-            {
-                int currentByte = i * 8;                                // Gets the distance between the desired byte and it's first binary digit in bits.
-                ulong image = ((ulong)imageBytes[i]) << currentByte;    // Gets the value of the desired byte and shifts it to the desired location.
-                preimage |= image;                                      // Adds the desired byte to preimage.
-            }                                                           // NOTE: The mask can be omitted since none of the values are more than 8 bits.
-
-            decryptedCode = preimage;
-            return ApplyTolerance(preimage, _shift, _shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), _shift, _shiftBack);
         }
 
         /// <summary>
@@ -302,21 +252,14 @@ namespace TimeBasedVerification
             if (!IsClient) throw new CryptographicException("No private key present for decryption.");
             if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
 
-            byte[] imageBytes;
-            ulong preimage = 0b_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000;
-
-            try { imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); }
+            try 
+			{ 
+				byte[] imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); 
+				ulong preimage = ToUlong(imageBytes);
+				return ApplyTolerance(preimage, shift, shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), shift, shiftBack);
+			}
             catch (CryptographicException) { throw; }
-
-            for (int i = 0; i < 8; i++)
-            {
-                int currentByte = i * 8;                                // Gets the distance between the desired byte and it's first binary digit in bits.
-                ulong image = ((ulong)imageBytes[i]) << currentByte;    // Gets the value of the desired byte and shifts it to the desired location.
-                preimage |= image;                                      // Adds the desired byte to preimage.
-            }                                                           // NOTE: The mask can be omitted since none of the values are more than 8 bits.
-
-
-            return ApplyTolerance(preimage, shift, shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), shift, shiftBack);
+            
         }
 
         /// <summary>
@@ -352,21 +295,15 @@ namespace TimeBasedVerification
             if (!IsClient) throw new CryptographicException("No private key present for decryption.");
             if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
 
-            byte[] imageBytes;
-            ulong preimage = 0;
-
-            try { imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); }
+            try 
+			{ 
+				byte[] imageBytes = CryptoServiceProvider.Decrypt(code.Code, true);
+				ulong preimage = ToUlong(imageBytes);
+				
+				decryptedCode = imageBytes;
+            	return ApplyTolerance(preimage, shift, shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), shift, shiftBack);
+			}
             catch (CryptographicException) { throw; }
-
-            for (int i = 0; i < 8; i++)
-            {
-                int currentByte = i * 8;                                // Gets the distance between the desired byte and it's first binary digit in bits.
-                ulong image = ((ulong)imageBytes[i]) << currentByte;    // Gets the value of the desired byte and shifts it to the desired location.
-                preimage |= image;                                      // Adds the desired byte to preimage.
-            }                                                           // NOTE: The mask can be omitted since none of the values are more than 8 bits.
-
-            decryptedCode = imageBytes;
-            return ApplyTolerance(preimage, shift, shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), shift, shiftBack);
         }
 
         /// <summary>
@@ -401,21 +338,15 @@ namespace TimeBasedVerification
             if (!IsClient) throw new CryptographicException("No private key present for decryption.");
             if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
 
-            byte[] imageBytes;
-            ulong preimage = 0;
+            try 
+			{ 
+				byte[] imageBytes = CryptoServiceProvider.Decrypt(code.Code, true);
+				ulong preimage = ToUlong(imageBytes);
 
-            try { imageBytes = CryptoServiceProvider.Decrypt(code.Code, true); }
+				decryptedCode = preimage;
+            	return ApplyTolerance(preimage, shift, shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), shift, shiftBack);
+			}
             catch (CryptographicException) { throw; }
-
-            for (int i = 0; i < 8; i++)
-            {
-                int currentByte = i * 8;                                // Gets the distance between the desired byte and it's first binary digit in bits.
-                ulong image = ((ulong)imageBytes[i]) << currentByte;    // Gets the value of the desired byte and shifts it to the desired location.
-                preimage |= image;                                      // Adds the desired byte to preimage.
-            }                                                           // NOTE: The mask can be omitted since none of the values are more than 8 bits.
-
-            decryptedCode = preimage;
-            return ApplyTolerance(preimage, shift, shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), shift, shiftBack);
         }
 
         /// <summary>
