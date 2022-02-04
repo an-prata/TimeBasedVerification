@@ -126,3 +126,6 @@ namespace TimeBasedVerification.Tests
         }
     }
 }
+
+// ShiftedTolerantVerifierTests.cs (https://github.com/an-prata/TimeBasedVerification)
+// Copyright (c) 2022 Evan Overman (https://github.com/an-prata)

@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeBasedVerification", "Ti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeBasedVerification.Tests", "TimeBasedVerification.Tests\TimeBasedVerification.Tests.csproj", "{11F41609-56CA-4688-80E9-2122805AD42A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeBasedVerification.BitwiseHelpers", "TimeBasedVerification.BitwiseHelpers\TimeBasedVerification.BitwiseHelpers.csproj", "{89FE9DD6-7528-4BF7-A91B-BF33E7AFFFD9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeBasedVerification.Tests.BitwiseHelpers", "TimeBasedVerification.Tests.BitwiseHelpers\TimeBasedVerification.Tests.BitwiseHelpers.csproj", "{8AD4EA70-376B-4612-A93D-1B63281257A4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +28,13 @@ Global
 		{11F41609-56CA-4688-80E9-2122805AD42A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11F41609-56CA-4688-80E9-2122805AD42A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11F41609-56CA-4688-80E9-2122805AD42A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89FE9DD6-7528-4BF7-A91B-BF33E7AFFFD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89FE9DD6-7528-4BF7-A91B-BF33E7AFFFD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89FE9DD6-7528-4BF7-A91B-BF33E7AFFFD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89FE9DD6-7528-4BF7-A91B-BF33E7AFFFD9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8AD4EA70-376B-4612-A93D-1B63281257A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8AD4EA70-376B-4612-A93D-1B63281257A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8AD4EA70-376B-4612-A93D-1B63281257A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8AD4EA70-376B-4612-A93D-1B63281257A4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

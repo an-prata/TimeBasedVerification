@@ -1,5 +1,5 @@
 // TimeBasedVerification (https://github.com/an-prata/TimeBasedVerification)
-// Copyright (c) 2021 Evan Overman (https://github.com/an-prata)
+// Copyright (c) 2022 Evan Overman (https://github.com/an-prata)
 // Licensed under the MIT License.
 
 using System.Security.Cryptography;
@@ -452,3 +452,6 @@ namespace TimeBasedVerification
         ~TolerantVerifier() => Dispose(false);
     }
 }
+
+// TolerantVerifier.cs (https://github.com/an-prata/TimeBasedVerification)
+// Copyright (c) 2022 Evan Overman (https://github.com/an-prata)

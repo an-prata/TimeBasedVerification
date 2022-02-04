@@ -1,5 +1,5 @@
 // TimeBasedVerification (https://github.com/an-prata/TimeBasedVerification)
-// Copyright (c) 2021 Evan Overman (https://github.com/an-prata)
+// Copyright (c) 2022 Evan Overman (https://github.com/an-prata)
 // Licensed under the MIT License.
 
 using Xunit;
@@ -116,3 +116,6 @@ namespace TimeBasedVerification.Tests.BitwiseHelpers
         }
     }
 }
+
+// ByteArraysTests.cs (https://github.com/an-prata/TimeBasedVerification)
+// Copyright (c) 2022 Evan Overman (https://github.com/an-prata)

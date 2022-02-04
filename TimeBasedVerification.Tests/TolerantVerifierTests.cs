@@ -6,7 +6,6 @@ using System;
 using System.Threading;
 using System.Security.Cryptography;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace TimeBasedVerification.Tests
 {
@@ -114,3 +113,6 @@ namespace TimeBasedVerification.Tests
         }
     }
 }
+
+// TolerantVerifierTests.cs (https://github.com/an-prata/TimeBasedVerification)
+// Copyright (c) 2022 Evan Overman (https://github.com/an-prata)

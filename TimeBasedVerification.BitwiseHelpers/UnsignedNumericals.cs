@@ -1,5 +1,5 @@
 // TimeBasedVerification (https://github.com/an-prata/TimeBasedVerification)
-// Copyright (c) 2021 Evan Overman (https://github.com/an-prata)
+// Copyright (c) 2022 Evan Overman (https://github.com/an-prata)
 // Licensed under the MIT License.
 
 namespace TimeBasedVerification.BitwiseHelpers
@@ -112,3 +112,6 @@ namespace TimeBasedVerification.BitwiseHelpers
 		}
 	}
 }
+
+// UnsignedNumericals.cs (https://github.com/an-prata/TimeBasedVerification)
+// Copyright (c) 2022 Evan Overman (https://github.com/an-prata)
