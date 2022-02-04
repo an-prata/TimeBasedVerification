@@ -10,3 +10,5 @@
 // {FILE_NAME} (https://github.com/an-prata/TimeBasedVerification)
 // Copyright (c) 2022 Evan Overman (https://github.com/an-prata)
 >>>FOOTER_END<<<   
+
+py FileHeaders.py --recursive --detect_header --extension '.cs' --header_file 'FileHeaders'
