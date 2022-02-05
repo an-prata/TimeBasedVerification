@@ -182,9 +182,7 @@ namespace TimeBasedVerification
                 decryptedCode = imageBytes;
                 return ApplyTolerance(preimage) == ApplyTolerance(GetCurrentElapsedSeconds());
             }
-            catch (CryptographicException) { throw; }
-
-            
+            catch (CryptographicException) { throw; }            
         }
 
         /// <summary>
@@ -216,9 +214,7 @@ namespace TimeBasedVerification
                 decryptedCode = preimage;
                 return ApplyTolerance(preimage) == ApplyTolerance(GetCurrentElapsedSeconds());
             }
-            catch (CryptographicException) { throw; }
-
-            
+            catch (CryptographicException) { throw; }  
         }
 
         /// <summary>

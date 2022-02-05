@@ -258,8 +258,7 @@ namespace TimeBasedVerification
 				ulong preimage = ToUlong(imageBytes);
 				return ApplyTolerance(preimage, shift, shiftBack) == ApplyTolerance(GetCurrentElapsedSeconds(), shift, shiftBack);
 			}
-            catch (CryptographicException) { throw; }
-            
+            catch (CryptographicException) { throw; }    
         }
 
         /// <summary>
