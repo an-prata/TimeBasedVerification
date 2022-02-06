@@ -5,6 +5,7 @@
 using System.Security.Cryptography;
 
 using static TimeBasedVerification.BitwiseHelpers.ByteArrays;
+using static TimeBasedVerification.BitwiseHelpers.HumanReadable;
 using static TimeBasedVerification.BitwiseHelpers.UnsignedNumericals;
 
 namespace TimeBasedVerification
@@ -130,6 +131,93 @@ namespace TimeBasedVerification
             {
                 KeyLength = CryptoServiceProvider.KeySize,
                 Code = CryptoServiceProvider.Encrypt(imageBytes, true)
+            };
+        }
+
+        /// <summary>
+        /// Creates a verification code based on the current time
+        /// and then encrypts it. To make the code human readable
+        /// it is encrypted without padding which can lead to a
+        /// lower level of security.
+        /// </summary>
+        /// 
+        /// <returns>
+        /// The encrypted and time-based verification code that
+        /// was created.
+        /// </returns>
+        public HumanReadableVerificationCode MakeHumanReadableVerificationCode()
+        {
+            ulong preimage = GetCurrentElapsedSeconds();
+            byte[] imageBytes = ToBytes(preimage);
+            ulong numericCode = ToUlong(CryptoServiceProvider.Encrypt(imageBytes, false));
+
+            return new HumanReadableVerificationCode
+            {
+                KeyLength = CryptoServiceProvider.KeySize,
+                Code = MakeHumanReadable(numericCode)
+            };
+        }
+
+        /// <summary>
+        /// Creates a verification code based on the current time
+        /// and then encrypts it. To make the code human readable
+        /// it is encrypted without padding which can lead to a
+        /// lower level of security.
+        /// </summary>
+        /// 
+        /// <param name="code">
+        /// A byte array to be assigned to the unencrypted
+        /// verification code.
+        /// </param>
+        /// 
+        /// <returns>
+        /// The encrypted and time-based verification code that
+        /// was created.
+        /// </returns>
+        public HumanReadableVerificationCode MakeHumanReadableVerificationCode(out byte[] code)
+        {
+            ulong preimage = GetCurrentElapsedSeconds();
+            byte[] imageBytes = ToBytes(preimage);
+
+            code = imageBytes;
+
+            ulong numericCode = ToUlong(CryptoServiceProvider.Encrypt(imageBytes, false));
+
+            return new HumanReadableVerificationCode
+            {
+                KeyLength = CryptoServiceProvider.KeySize,
+                Code = MakeHumanReadable(numericCode)
+            };
+        }
+
+        /// <summary>
+        /// Creates a verification code based on the current time
+        /// and then encrypts it. To make the code human readable
+        /// it is encrypted without padding which can lead to a
+        /// lower level of security.
+        /// </summary>
+        /// 
+        /// <param name="code">
+        /// The unencrypted code.
+        /// </param>
+        /// 
+        /// <returns>
+        /// The encrypted and time-based verification code that
+        /// was created.
+        /// </returns>
+        public HumanReadableVerificationCode MakeHumanReadableVerificationCode(out ulong code)
+        {
+            ulong preimage = GetCurrentElapsedSeconds();
+            byte[] imageBytes = ToBytes(preimage);
+
+			code = preimage;
+
+            ulong numericCode = ToUlong(CryptoServiceProvider.Encrypt(imageBytes, false));
+
+            return new HumanReadableVerificationCode
+            {
+                KeyLength = CryptoServiceProvider.KeySize,
+                Code = MakeHumanReadable(numericCode)
             };
         }
 
