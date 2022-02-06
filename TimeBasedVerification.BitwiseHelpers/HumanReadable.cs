@@ -24,7 +24,7 @@ namespace TimeBasedVerification.BitwiseHelpers
 
 		private const uint byteMask32 = 0b_00_00000_00000_00000_00000_00000_11111;
 
-		private const ulong byteMask64 = 0b_000_00000_00000_00000_00000_00000_00000_00000_00000_00000_00000_000000_11111;
+		private const ulong byteMask64 = 0b_0000_00000_00000_00000_00000_00000_00000_00000_00000_00000_00000_00000_11111;
 
 		/// <summary>
 		/// Takes a ushort and makes it a 4 character human readable string.
@@ -46,7 +46,7 @@ namespace TimeBasedVerification.BitwiseHelpers
 				// Gets the distance between the desired 5 bits and it's first binary digit in bits.
 				int currentByte = 5 * i;
 
-				// Creates a mask in which the desired 5 bits is 111111.
+				// Creates a mask in which the desired 5 bits is 11111.
 				ushort currentByteMask = (ushort)(byteMask16 << currentByte);
 
 				// Gets a number between 0 and 31 to find a digit from string digits.
@@ -79,7 +79,7 @@ namespace TimeBasedVerification.BitwiseHelpers
 				// Gets the distance between the desired 5 bits and it's first binary digit in bits.
 				int currentByte = 5 * i;
 
-				// Creates a mask in which the desired 5 bits is 111111.
+				// Creates a mask in which the desired 5 bits is 11111.
 				uint currentByteMask = byteMask32 << currentByte;
 
 				// Gets a number between 0 and 31 to find a digit from string digits.
@@ -93,7 +93,7 @@ namespace TimeBasedVerification.BitwiseHelpers
 		}
 
 		/// <summary>
-		/// Takes a ulong and makes it an 12 character human readable string.
+		/// Takes a ulong and makes it an 13 character human readable string.
 		/// </summary>
 		/// 
 		/// <param name="preimage">
@@ -101,18 +101,18 @@ namespace TimeBasedVerification.BitwiseHelpers
 		/// </param>
 		/// 
 		/// <returns>
-		/// An 12 character human readable string.
+		/// An 13 character human readable string.
 		/// </returns>
 		public static string MakeHumanReadable(ulong preimage)
 		{
 			string image = "";
 
-			for (int i = 0; i < 12; i++)
+			for (int i = 0; i < 13; i++)
 			{
 				// Gets the distance between the desired 5 bits and it's first binary digit in bits.
 				int currentByte = 5 * i;
 
-				// Creates a mask in which the desired 5 bits is 111111.
+				// Creates a mask in which the desired 5 bits is 11111.
 				ulong currentByteMask = byteMask64 << currentByte;
 
 				// Gets a number between 0 and 31 to find a digit from string digits.
@@ -204,7 +204,7 @@ namespace TimeBasedVerification.BitwiseHelpers
 		}
 
 		/// <summary>
-		/// Takes a 12 character human readable string and makes a 64-bit ulong.
+		/// Takes a 13 character human readable string and makes a 64-bit ulong.
 		/// </summary>
 		/// 
 		/// <param name="humanReadable">
@@ -216,14 +216,14 @@ namespace TimeBasedVerification.BitwiseHelpers
 		/// </returns>
 		public static ulong GetOriginalNumeric64(string humanReadable)
 		{
-			if (humanReadable.Length != 12)
+			if (humanReadable.Length != 13)
 			{
 				throw new ArgumentException("Given string was incorrect length.");
 			}
 
 			ulong originalNumeric = 0;
 
-			for (int i = 0; i < 12; i++)
+			for (int i = 0; i < 13; i++)
 			{
 				// Gets the distance between the desired 5 bits and orginalNumeric's 
 				// first binary digit in bits.
