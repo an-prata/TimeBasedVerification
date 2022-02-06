@@ -415,6 +415,212 @@ namespace TimeBasedVerification
         }
 
         /// <summary>
+        /// Checks if the encrypted code is valid by decrypting
+        /// it and comparing to the time.
+        /// </summary>
+        /// 
+        /// <param name="code">
+        /// The code to check.
+        /// </param>
+        /// 
+        /// <returns>
+        /// True if code is valid.
+        /// </returns>
+        public bool CheckVerificationCode(HumanReadableVerificationCode code)
+        {
+            if (!IsClient) throw new CryptographicException("No private key present for decryption.");
+            if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
+
+            try 
+            { 
+                byte[] codeBytes = ToBytes(GetOriginalNumeric64(code.Code));
+				byte[] imageBytes = CryptoServiceProvider.Decrypt(codeBytes, false); 
+                ulong preimage = ToUlong(imageBytes);
+                return ApplyTolerance(preimage) == ApplyTolerance(GetCurrentElapsedSeconds());
+            }
+            catch (CryptographicException) { throw; }
+        }
+
+        /// <summary>
+        /// Checks if the encrypted code is valid by decrypting
+        /// it and comparing to the time.
+        /// </summary>
+        /// 
+        /// <param name="code">
+        /// The code to check.
+        /// </param>
+        /// 
+        /// <param name="decryptedCode">
+        /// A byte array that will be assigned to the code
+        /// after it has been decrypted.
+        /// </param>
+        /// 
+        /// <returns>
+        /// True if code is valid.
+        /// </returns>
+        public bool CheckVerificationCode(HumanReadableVerificationCode code, out byte[] decryptedCode)
+        {
+            if (!IsClient) throw new CryptographicException("No private key present for decryption.");
+            if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
+
+            try 
+            { 
+                byte[] codeBytes = ToBytes(GetOriginalNumeric64(code.Code));
+				byte[] imageBytes = CryptoServiceProvider.Decrypt(codeBytes, false);  
+                ulong preimage = ToUlong(imageBytes);
+
+                decryptedCode = imageBytes;
+                return ApplyTolerance(preimage) == ApplyTolerance(GetCurrentElapsedSeconds());
+            }
+            catch (CryptographicException) { throw; }            
+        }
+
+        /// <summary>
+        /// Checks if the encrypted code is valid by decrypting
+        /// it and comparing to the time.
+        /// </summary>
+        /// 
+        /// <param name="code">
+        /// The code to check.
+        /// </param>
+        /// 
+        /// <param name="decryptedCode">
+        /// A ulong that will be assigned the preimage.
+        /// </param>
+        /// 
+        /// <returns>
+        /// True if code is valid.
+        /// </returns>
+        public bool CheckVerificationCode(HumanReadableVerificationCode code, out ulong decryptedCode)
+        {
+            if (!IsClient) throw new CryptographicException("No private key present for decryption.");
+            if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
+
+            try 
+            { 
+                byte[] codeBytes = ToBytes(GetOriginalNumeric64(code.Code));
+				byte[] imageBytes = CryptoServiceProvider.Decrypt(codeBytes, false);  
+                ulong preimage = ToUlong(imageBytes);
+
+                decryptedCode = preimage;
+                return ApplyTolerance(preimage) == ApplyTolerance(GetCurrentElapsedSeconds());
+            }
+            catch (CryptographicException) { throw; }  
+        }
+
+        /// <summary>
+        /// Checks if the encrypted code is valid by decrypting
+        /// it and comparing to the time using the tolerance
+        /// parameter.
+        /// </summary>
+        /// 
+        /// <param name="code">
+        /// The code to check.
+        /// </param>
+        /// 
+        /// <param name="tolerance">
+        /// The delegate to be used instead of the one passed
+        /// into the contructor.
+        /// </param>
+        /// 
+        /// <returns>
+        /// True if code is valid.
+        /// </returns>
+        public bool CheckVerificationCode(HumanReadableVerificationCode code, ToleranceDelegate tolerance)
+        {
+            if (!IsClient) throw new CryptographicException("No private key present for decryption.");
+            if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
+
+            try 
+            { 
+                byte[] codeBytes = ToBytes(GetOriginalNumeric64(code.Code));
+				byte[] imageBytes = CryptoServiceProvider.Decrypt(codeBytes, false);  
+                ulong preimage = ToUlong(imageBytes);
+                return tolerance(preimage) == tolerance(GetCurrentElapsedSeconds());
+            }
+            catch (CryptographicException) { throw; }
+        }
+
+        /// <summary>
+        /// Checks if the encrypted code is valid by decrypting
+        /// it and comparing to the time using the tolerance
+        /// parameter.
+        /// </summary>
+        /// 
+        /// <param name="code">
+        /// The code to check.
+        /// </param>
+        /// 
+        /// <param name="decryptedCode">
+        /// A byte array that will be assigned to the code
+        /// after it has been decrypted.
+        /// </param>
+        /// 
+        /// <param name="tolerance">
+        /// The delegate to be used instead of the one passed
+        /// into the contructor.
+        /// </param>
+        /// 
+        /// <returns>
+        /// True if code is valid.
+        /// </returns>
+        public bool CheckVerificationCode(HumanReadableVerificationCode code, out byte[] decryptedCode, ToleranceDelegate tolerance)
+        {
+            if (!IsClient) throw new CryptographicException("No private key present for decryption.");
+            if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
+
+            try 
+            { 
+                byte[] codeBytes = ToBytes(GetOriginalNumeric64(code.Code));
+				byte[] imageBytes = CryptoServiceProvider.Decrypt(codeBytes, false);  
+                ulong preimage = ToUlong(imageBytes);
+
+                decryptedCode = imageBytes;
+                return tolerance(preimage) == tolerance(GetCurrentElapsedSeconds());
+            }
+            catch (CryptographicException) { throw; }
+        }
+
+        /// <summary>
+        /// Checks if the encrypted code is valid by decrypting
+        /// it and comparing to the time using the tolerance
+        /// parameter.
+        /// </summary>
+        /// 
+        /// <param name="code">
+        /// The code to check.
+        /// </param>
+        /// 
+        /// <param name="decryptedCode">
+        /// A ulong that will be assigned the preimage.
+        /// </param>
+        /// 
+        /// <param name="tolerance">
+        /// The delegate to be used instead of the one passed
+        /// into the contructor.
+        /// </param>
+        /// 
+        /// <returns>
+        /// True if code is valid.
+        /// </returns>
+        public bool CheckVerificationCode(HumanReadableVerificationCode code, out ulong decryptedCode, ToleranceDelegate tolerance)
+        {
+            if (!IsClient) throw new CryptographicException("No private key present for decryption.");
+            if (code.KeyLength != CryptoServiceProvider.KeySize) throw new CryptographicException("Key sizes don't match.");
+
+            try 
+            { 
+                byte[] codeBytes = ToBytes(GetOriginalNumeric64(code.Code));
+				byte[] imageBytes = CryptoServiceProvider.Decrypt(codeBytes, false); 
+                ulong preimage = ToUlong(imageBytes); 
+
+                decryptedCode = preimage;
+                return tolerance(preimage) == tolerance(GetCurrentElapsedSeconds());
+            }
+            catch (CryptographicException) { throw; }
+        }
+
+        /// <summary>
         /// Creates a new instance of the TolerantVerifier class.
         /// It's recommended that you use VerifierShifted or
         /// VerifierRounded instead as they allow a small
